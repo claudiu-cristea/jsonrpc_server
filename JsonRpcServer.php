@@ -49,7 +49,7 @@ class JsonRpcServer{
     }
     
     //If needed, check if parameters can be omitted
-    $arg_count = $arg_count = (isset($this->method['args'])) ? count($this->method['args']) : 0;
+    $arg_count = isset($this->method['args']) ? count($this->method['args']) : 0;
     if (!isset($this->params)) {
       for ($i=0; $i<$arg_count; $i++) {
         $arg = $this->method['#args'][$i];
