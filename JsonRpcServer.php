@@ -45,7 +45,7 @@ class JsonRpcServer{
 
     if (!isset($this->method)) { // No method found is a fatal error
       $this->error(JSONRPC_ERROR_PROCEDURE_NOT_FOUND, t("Invalid method @method", 
-        array('@method' => $request)));
+        array('@method' => $this->method_name)));
     }
     
     //If needed, check if parameters can be omitted
