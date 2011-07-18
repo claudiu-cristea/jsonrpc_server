@@ -49,7 +49,7 @@ class JsonRpcServer{
     }
     
     //If needed, check if parameters can be omitted
-    $arg_count = (isset($this->method['args'])) ? count($this->method['args']) : 0;
+    $arg_count = count($this->method['args']);
     if (!isset($this->params)) {
       for ($i=0; $i<$arg_count; $i++) {
         $arg = $this->method['#args'][$i];
@@ -147,7 +147,7 @@ class JsonRpcServer{
     }
     
     // We are returning JSON, so tell the browser.
-    drupal_add_http_header('Content-Type', 'application/json charset=utf-8');
+    drupal_set_header('Content-Type: application/json; charset=utf-8');
 
     // Services assumes parameter positions to match the method callback's
     // function signature so we need to sort arguments by position (key)
@@ -156,9 +156,7 @@ class JsonRpcServer{
     // method definitions instead of requiring all parameters to be present, as
     // we do now.
     // For reference: http://drupal.org/node/715044
-    if (is_array($this->args)) {
-      ksort($this->args);
-    }
+    ksort($this->args);
 
     //Call service method
     try {

@@ -3,4 +3,4 @@ name = "JSON-RPC Server"
 description = "Provides an JSON-RPC server."
 package = "Services - servers"
 dependencies[] = services
-core = "7.x"
+core = "6.x"
