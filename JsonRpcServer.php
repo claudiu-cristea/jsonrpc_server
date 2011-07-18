@@ -28,7 +28,7 @@ class JsonRpcServer{
     $this->id = isset($in['id']) ? $in['id'] : NULL;
     $this->version = isset($in['jsonrpc']) ? $in['jsonrpc'] : '1.1';
     $this->major_version = intval(substr($this->version, 0, 1));
-    $this->params = isset($in['params']) ? $in['params'] : NULL;
+    $this->params = isset($in['params']) ? $in['params'] : array();
   }
   
   public function handle() {
@@ -49,7 +49,7 @@ class JsonRpcServer{
     }
     
     //If needed, check if parameters can be omitted
-    $arg_count = count($this->method['args']);
+    $arg_count = $arg_count = (isset($this->method['args'])) ? count($this->method['args']) : 0;
     if (!isset($this->params)) {
       for ($i=0; $i<$arg_count; $i++) {
         $arg = $this->method['#args'][$i];
