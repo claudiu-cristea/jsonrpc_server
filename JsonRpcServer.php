@@ -147,7 +147,7 @@ class JsonRpcServer{
     }
     
     // We are returning JSON, so tell the browser.
-    drupal_add_http_header('Content-Type', 'application/json charset=utf-8');
+    drupal_add_http_header('Content-Type', 'application/json; charset=utf-8');
 
     // Services assumes parameter positions to match the method callback's
     // function signature so we need to sort arguments by position (key)
