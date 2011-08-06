@@ -28,7 +28,7 @@ class JsonRpcServer{
     $this->id = isset($in['id']) ? $in['id'] : NULL;
     $this->version = isset($in['jsonrpc']) ? $in['jsonrpc'] : '1.1';
     $this->major_version = intval(substr($this->version, 0, 1));
-    $this->params = isset($in['params']) ? $in['params'] : NULL;
+    $this->params = isset($in['params']) ? $in['params'] : array();
   }
   
   public function handle() {
@@ -45,11 +45,11 @@ class JsonRpcServer{
 
     if (!isset($this->method)) { // No method found is a fatal error
       $this->error(JSONRPC_ERROR_PROCEDURE_NOT_FOUND, t("Invalid method @method", 
-        array('@method' => $request)));
+        array('@method' => $this->method_name)));
     }
     
     //If needed, check if parameters can be omitted
-    $arg_count = count($this->method['args']);
+    $arg_count = isset($this->method['args']) ? count($this->method['args']) : 0;
     if (!isset($this->params)) {
       for ($i=0; $i<$arg_count; $i++) {
         $arg = $this->method['#args'][$i];
@@ -124,7 +124,7 @@ class JsonRpcServer{
     //Validate arguments
     for($i=0; $i<$arg_count; $i++)
     {
-      $val = $this->args[$i];
+      $val = isset($this->args[$i]) ? $this->args[$i] : NULL;
       $arg = $this->method['args'][$i];
       
       if (isset($val)) { //If we have data
@@ -147,7 +147,7 @@ class JsonRpcServer{
     }
     
     // We are returning JSON, so tell the browser.
-    drupal_set_header('Content-Type: application/json; charset=utf-8');
+    drupal_add_http_header('Content-Type', 'application/json; charset=utf-8');
 
     // Services assumes parameter positions to match the method callback's
     // function signature so we need to sort arguments by position (key)
