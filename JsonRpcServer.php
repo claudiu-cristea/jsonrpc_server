@@ -124,7 +124,7 @@ class JsonRpcServer{
     //Validate arguments
     for($i=0; $i<$arg_count; $i++)
     {
-      $val = $this->args[$i];
+      $val = isset($this->args[$i]) ? $this->args[$i] : NULL;
       $arg = $this->method['args'][$i];
       
       if (isset($val)) { //If we have data
