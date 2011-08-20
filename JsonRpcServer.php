@@ -162,11 +162,16 @@ class JsonRpcServer{
     try {
       $result = services_controller_execute($this->method, $this->args);
       return $this->result($result);
-    } catch (ServicesException $e) {
-      $this->error(JSONRPC_ERROR_INTERNAL_ERROR, $e->getMessage(), $e->getData());
+    }
+    catch (ServicesException $e) {
+      $application_error = $e->getCode();
+      $error_code = empty($application_error) ? JSONRPC_ERROR_INTERNAL_ERROR : $application_error;
+      $this->error($error_code, $e->getMessage(), $e->getData());
     }
     catch (Exception $e) {
-      $this->error(JSONRPC_ERROR_INTERNAL_ERROR, $e->getMessage());
+      $application_error = $e->getCode();
+      $error_code = empty($application_error) ? JSONRPC_ERROR_INTERNAL_ERROR : $application_error;
+      $this->error($error_code, $e->getMessage(), $e->getData());
     }
   }
   
