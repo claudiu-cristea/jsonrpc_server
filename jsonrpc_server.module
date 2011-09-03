@@ -26,7 +26,7 @@ function jsonrpc_server_server() {
   // Get the endpoint.
   $endpoint_name = services_get_server_info('endpoint');
   $endpoint = services_endpoint_load($endpoint_name);
-  $settings = $endpoint->server_settings[$endpoint->server];
+  $settings = isset($endpoint->server_settings[$endpoint->server]) ? $endpoint->server_settings[$endpoint->server] : NULL;
 
   $method = $_SERVER['REQUEST_METHOD'];
 
