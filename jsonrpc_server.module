@@ -1,74 +1,96 @@
 <?php
-// $Id$
 
+/**
+ * Implements hook_server_info().
+ */
 function jsonrpc_server_server_info() {
   return array(
     'name' => 'JSON-RPC',
     'path' => 'json-rpc',
+    'settings' => array(
+      'file' => array('inc', 'jsonrpc_server'),
+      'form' => '_jsonrpc_server_settings',
+      'submit' => '_jsonrpc_server_settings_submit',
+    ),
   );
 }
 
+/**
+ * Implements hook_server().
+ */
 function jsonrpc_server_server() {
-  require_once('JsonRpcServer.php');
-  $GLOBALS['devel_shutdown'] = false;
 
-  // TODO: Add settings page with options for disabling features that doesn't
-  // follow the JSON-RPC spec. One thing that definitely could be disabled is
-  // the GET request handling, regardless of conformance to spec.
+  // Remove Devel shutdown.
+  $GLOBALS['devel_shutdown'] = FALSE;
+
+  // Get the endpoint.
+  $endpoint_name = services_get_server_info('endpoint');
+  $endpoint = services_endpoint_load($endpoint_name);
+  $settings = $endpoint->server_settings[$endpoint->server];
 
   $method = $_SERVER['REQUEST_METHOD'];
-  switch ($method) {
-    case 'POST':
-      // Omit charset parameter
-      list($content_type) = explode(';', $_SERVER['CONTENT_TYPE'], 2);
 
-      switch($content_type) {
-        // Handling of a standard JSON-RPC call
-        case 'application/json':
-          // We'll use the inputstream module if it's installed because
-          // otherwise it's only possible to read the input stream once.
-          // And other parts of services or drupal might want to access it.
-          if (module_exists('inputstream')) {
-            $body = file_get_contents('drupal://input');
-          }
-          else {
-            $body = file_get_contents('php://input');
-          }
-          $in = json_decode($body, TRUE);
-        break;
-        // It's not included in the JSON-RPC standard but we support
-        // sending only the params as JSON.
-        default:
-          $in = $_POST;
-          $in['params'] = json_decode($in['params'], TRUE);
-        break;
+  if ($method == 'POST') {
+
+    // Strip out charset if is there.
+    list($content_type) = explode(';', $_SERVER['CONTENT_TYPE'], 2);
+
+    if (in_array($content_type, array('application/json', 'application/json-rpc', 'application/jsonrequest'))) {
+      // We'll use the inputstream module if it's installed because
+      // otherwise it's only possible to read the input stream once.
+      // And other parts of services or drupal might want to access it.
+      if (module_exists('inputstream')) {
+        $body = file_get_contents('drupal://input');
       }
-      break;
-    case 'GET':
-      // This handling of get requests doesn't implement the JSON-RPC spec
-      // fully. Multiple parameters sharing names are not collapsed into
-      // arrays. See
-      // http://json-rpc.org/wd/JSON-RPC-1-1-WD-20060807.html#GetProcedureCall
-      // for details.
-      // TODO: Implement custom GET-parameter parsing
-      $in = array(
-        'jsonrpc' => '1.1',
-        'method' => basename($_GET['q']),
-        'params' => $_GET,
-      );
-    break;
+      else {
+        $body = file_get_contents('php://input');
+      }
+
+      $input = drupal_json_decode($body);
+    }
   }
 
-  $in['method'] = trim($in['method'], ' "');
-  $server = new JsonRpcServer($in);
+  // Allow GET only if was enabled.
+  elseif ($method == 'GET' && $settings['allow_get_requests']) {
+    /**
+     * Collapse multiple parameters with the same name in arrays.
+     *
+     * @see http://json-rpc.org/wd/JSON-RPC-1-1-WD-20060807.html#GetProcedureCall
+     */
+    $params = array();
+    foreach (explode('&', $_SERVER['QUERY_STRING']) as $pair) {
+      list($key, $value) = explode('=', $pair, 2);
+      $key = str_replace('[]', '', $key);
+
+      if (isset($params[$key])) {
+        if (!is_array($params[$key])) {
+          $params[$key] = array($params[$key]);
+        }
+        $params[$key][] = html_entity_decode($value);
+      }
+      else {
+        $params[$key] = html_entity_decode($value);
+      }
+    }
+
+    $input = array(
+      'version' => '1.1',
+      'method' => basename($_GET['q']),
+      'params' => $params,
+    );
+  }
+
+  // Some cleanup on "method" may be necessary.
+  $input['method'] = trim($input['method'], ' "');
+
+  // Start a new server instance.
+  $server = new JsonRpcServer($input, $method);
+
   try {
+    // Invoke the server handler.
     return $server->handle();
-  } catch (ServicesException $e) {
-    return $server->response($e->getData());
   }
-}
-
-function jsonrpc_server_add_javascript() {
-  $path = drupal_get_path("module", "jsonrpc_server");
-  drupal_add_js($path ."/jsonrpc_server.js");
+  catch (ServicesException $e) {
+    return $server->buildResponse($e->getData());
+  }
 }
