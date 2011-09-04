@@ -261,11 +261,6 @@ class JsonRpcServer implements JsonRpcServerInterface {
    */
   protected function validateParam($delta, array $arg, &$param) {
 
-    // Check if the argument is mandatory but no parameter has been passed.
-    if (!$arg['optional'] && !isset($param)) {
-      $this->error(JSONRPC_ERROR_PARAMS, t('The argument "@arg" (index @delta) is required by the "@method" method but was not received.', array('@arg' => $arg['name'], '@delta' => $delta, '@method' => $this->methodName)));
-    }
-
     /**
      * If "struct" is expected, convert associative array to object but only if
      * the associative array has no numeric (positional) keys. Forcing those to
@@ -320,6 +315,11 @@ class JsonRpcServer implements JsonRpcServerInterface {
 
       // Find out the parameter for this argument.
       $param = isset($this->params[$arg['name']]) ? $this->params[$arg['name']] : (isset($this->params[$delta]) ? $this->params[$delta] : NULL);
+
+      // Check if the argument is mandatory but no parameter has been passed.
+      if (!$arg['optional'] && !isset($param)) {
+        $this->error(JSONRPC_ERROR_PARAMS, t('The argument "@arg" (index @delta) is required by the "@method" method but was not received.', array('@arg' => $arg['name'], '@delta' => $delta, '@method' => $this->methodName)));
+      }
 
       if (!is_null($param)) {
         // Parameter level validation.
